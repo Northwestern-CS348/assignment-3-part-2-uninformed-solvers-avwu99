@@ -26,16 +26,17 @@ fact: (on disk5 peg1)
 fact: (on disk2 peg2)
 fact: (on disk1 peg3)
 
-fact: (ontop disk3 peg1)
-fact: (ontop disk2 peg2)
-fact: (ontop disk1 peg3)
+fact: (onTopOf disk3 disk4)
+fact: (onTopOf disk4 disk5)
 
-fact: (larger disk5 disk4)
-fact: (larger disk4 disk3)
-fact: (larger disk3 disk2)
-fact: (larger disk2 disk1)
+fact: (top disk3 peg1)
+fact: (top disk2 peg2)
+fact: (top disk1 peg3)
 
-
+fact: (lessThan disk1 disk2)
+fact: (lessThan disk2 disk3)
+fact: (lessThan disk3 disk4)
+fact: (lessThan disk4 disk5)
 
 rule: ((larger ?x ?y) (larger ?z ?x)) -> (larger ?z ?y)
 rule: ((on ?x ?y) (ontop ?x ?y) (empty ?z)) -> (movable ?x ?y ?z)

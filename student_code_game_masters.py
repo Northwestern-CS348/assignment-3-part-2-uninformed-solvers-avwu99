@@ -72,7 +72,6 @@ class TowerOfHanoiGame(GameMaster):
 
         t3List.sort()
         p3 = tuple(t3List)
-
         return (p1, p2, p3)
 
     def makeMove(self, movable_statement):
@@ -103,39 +102,39 @@ class TowerOfHanoiGame(GameMaster):
 
         # Assert new 'on' fact
         fact2 = Fact(Statement(['on', moveDisk, newPeg]))
-        self.kb.kb_assert(fact2)
 
         # Find the disk under the moveDisk
-        answer = self.kb.kb_ask(Fact(Statement(["onTopOf", moveDisk, '?X'])))
+        answer = self.kb.kb_ask(Fact(Statement(['onTopOf', moveDisk, '?X'])))
         if answer:  # If a disk is found under moveDisk
             diskUnder = answer[0].bindings_dict['?X']
             fact3 = Fact(Statement(['onTopOf', moveDisk, diskUnder]))
             self.kb.kb_retract(fact3)
             fact7 = Fact(Statement(['top', diskUnder, oldPeg]))
-        else: # If there is no disk under the moveDisk
+            self.kb.kb_assert(fact7)
+        else:  # If there is no disk under the moveDisk
             fact3 = Fact(Statement(['empty', oldPeg]))
             self.kb.kb_assert(fact3)
 
         # If the new peg was empty, retract that fact
-        check = parse_input("fact: (empty %s)" %newPeg)
+        check = self.kb.kb_ask(Fact(Statement(['empty', newPeg])))
         if check:
             fact4 = Fact(Statement(['empty', newPeg]))
             self.kb.kb_retract(fact4)
+        else:
+            answer = self.kb.kb_ask(Fact(Statement(['top', '?X', newPeg])))
+            diskOnNewPeg = answer[0].bindings_dict['?X']
+            fact10 = Fact(Statement(['onTopOf', moveDisk, diskOnNewPeg]))
+            fact11 = Fact(Statement(['top', diskOnNewPeg, newPeg]))
+            self.kb.kb_assert(fact10)
+            self.kb.kb_retract(fact11)
 
         # Retract old fact of moveDisk being on the oldPeg and assert new fact of moveDisk on newPeg
         fact5 = Fact(Statement(['top', moveDisk, oldPeg]))
         self.kb.kb_retract(fact5)
         fact6 = Fact(Statement(['top', moveDisk, newPeg]))
-        self.kb.kb_assert(fact6)
 
-        # Retract old onTop fact of disk currently on the newPeg and assert new fact of moveDisk onTop of newPeg
-        answer = self.kb.kb_ask(Fact(Statement(['onTopOf', '?X', newPeg])))
-        if answer:  # If there is currently a disk on top of the newPeg
-            diskReplace = answer[0].bindings_dict['?X']
-            fact8 = Fact(Statement(['onTop', diskReplace, newPeg]))
-            self.kb.kb_retract(fact8)
-            fact9 = Fact(Statement(['onTopOf', moveDisk, diskReplace]))
-            self.kb.kb_assert(fact9)
+        self.kb.kb_assert(fact2)
+        self.kb.kb_assert(fact6)
 
     def reverseMove(self, movable_statement):
         """
@@ -182,47 +181,19 @@ class Puzzle8Game(GameMaster):
             A Tuple of Tuples that represent the game state
         """
         ### Student code goes here
-        tile_dict = {"tile1": 1, "tile2": 2, "tile3": 3, "tile4": 4, "tile5": 5, "tile6": 6, "tile7": 7, "tile8": 8,
-                     "empty": -1}
-        x_dict = {"pos1": 0, "pos2": 1, "pos3": 2}
+        original = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
 
-        row1 = self.kb.kb_ask(Fact(Statement(["coordinate", '?tile', '?X', "pos1"])))
-        rowList1= [0,0,0]
-        for i in row1:
-            val = i.bindings_dict['?tile']
-            x = i.bindings_dict['?X']
-            translateTile = tile_dict[val]  # tile value
-            translateX = x_dict[x]
-            rowList1[translateX] = translateTile
+        for counter in range(1, 9):
+            answer = self.kb.kb_ask(Fact(Statement(["coord", "tile" + str(counter), "?X", "?Y"])))
 
-        t1 = tuple(rowList1)
+            original[int(answer[0].bindings_dict['?Y'])][int(answer[0].bindings_dict['?X'])] = counter
 
-        row2 = self.kb.kb_ask(Fact(Statement(["coordinate", '?tile', '?X', "pos2"])))
-        rowList2 = [0,0,0]
-        for j in row2:
-            val = j.bindings_dict['?tile']
-            x = j.bindings_dict['?X']
-            translateTile = tile_dict[val]
-            translateX = x_dict[x]
-            rowList2[translateX] = translateTile
+        answer = self.kb.kb_ask(Fact(Statement(["coord", "empty", "?X", "?Y"])))
+        original[int(answer[0].bindings_dict['?Y'])][int(answer[0].bindings_dict['?X'])] = -1
 
-        t2 = tuple(rowList2)
+        finalTuple = tuple((tuple(original[0]), tuple(original[1]), tuple(original[2])))
 
-        row3 = self.kb.kb_ask(Fact(Statement(["coordinate", '?tile', '?X', "pos3"])))
-        rowList3 = [0,0,0]
-        for k in row3:
-            val = k.bindings_dict['?tile']
-            x = k.bindings_dict['?X']
-            translateTile = tile_dict[val]
-            translateX = x_dict[x]
-            rowList3[translateX] = translateTile
-
-        t3 = tuple(rowList3)
-
-        print(row3)
-        print(t1, t2, t3)
-        return (t1, t2, t3)
-
+        return finalTuple
 
     def makeMove(self, movable_statement):
         """
@@ -243,26 +214,14 @@ class Puzzle8Game(GameMaster):
         ### Student code goes here
         # Essentially were swapping positions of the tile in the movable statement with the empty tile
         terms = movable_statement.terms
-        tile = terms[0].__str__()
-        oldX = terms[1].__str__()
-        oldY = terms[2].__str__()
-        newX = terms[3].__str__()
-        newY = terms[4].__str__()
-
-        # Retract old coordinates of the moving tile
-        fact1 = Fact(Statement(['coordinate', tile, oldX, oldY]))
-
-        # Assert new coordinates of the moving tile
-        fact2 = Fact(Statement(['coordinate', tile, newX, newY]))
-
-        # Do the same with the empty tile
-        fact3 = Fact(Statement(['coordinate', 'empty', newX, newY]))
-
-        fact4 = Fact(Statement(['coordinate', 'empty', oldX, oldY]))
+        fact1 = Fact(Statement(["coord", terms[0], terms[1], terms[2]]))
+        fact2 = Fact(Statement(["coord", "empty", terms[3], terms[4]]))
+        fact3 = Fact(Statement(["coord", terms[0], terms[3], terms[4]]))
+        fact4 = Fact(Statement(["coord", "empty", terms[1], terms[2]]))
 
         self.kb.kb_retract(fact1)
-        self.kb.kb_retract(fact3)
-        self.kb.kb_assert(fact2)
+        self.kb.kb_retract(fact2)
+        self.kb.kb_assert(fact3)
         self.kb.kb_assert(fact4)
 
     def reverseMove(self, movable_statement):
